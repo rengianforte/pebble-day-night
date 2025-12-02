@@ -13,12 +13,10 @@ static GBitmap *image;
 static int redraw_counter;
 static int width;
 static int height;
-// s is set to memory of size STR_SIZE, and temporarily stores strings
-char *s;
 
 static void draw_earth() {
   // ##### calculate the time
-  int now = (int)time(NULL);
+  int now = time(NULL);
   float day_of_year; // value from 0 to 1 of progress through a year
   float time_of_day; // value from 0 to 1 of progress through a day
   // approx number of leap years since epoch
@@ -57,9 +55,9 @@ static void draw_earth() {
 #else
       int byte = y * gbitmap_get_bytes_per_row(world_bitmap) + x;
       if (angle < 0) { // dark pixel
-        ((char *)gbitmap_get_data(world_bitmap))[byte] = ((char *)gbitmap_get_data(world_bitmap))[width*height + byte];
+        gbitmap_get_data(world_bitmap)[byte] = gbitmap_get_data(world_bitmap)[width*height + byte];
       } else { // light pixel
-        ((char *)gbitmap_get_data(world_bitmap))[byte] = ((char *)gbitmap_get_data(world_bitmap))[width*height*2 + byte];
+        gbitmap_get_data(world_bitmap)[byte] = gbitmap_get_data(world_bitmap)[width*height*2 + byte];
       }
 #endif
     }
@@ -72,8 +70,8 @@ static void draw_watch(struct Layer *layer, GContext *ctx) {
 }
 
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
-  static char time_text[] = "00:00";
-  static char date_text[] = "Xxx, Xxx 00";
+  static char time_text[6]; // "00:00\0"
+  static char date_text[12]; // "Xxx, Xxx 00\0"
 
   strftime(date_text, sizeof(date_text), "%a, %b %e", tick_time);
   text_layer_set_text(date_text_layer, date_text);
@@ -82,9 +80,9 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
     strftime(time_text, sizeof(time_text), "%R", tick_time);
   } else {
     strftime(time_text, sizeof(time_text), "%I:%M", tick_time);
-  }
-  if (!clock_is_24h_style() && (time_text[0] == '0')) {
-    memmove(time_text, &time_text[1], sizeof(time_text) - 1);
+    if (time_text[0] == '0') {
+        memmove(time_text, &time_text[1], sizeof(time_text) - 1);
+    }
   }
   text_layer_set_text(time_text_layer, time_text);
  
@@ -108,7 +106,7 @@ static void window_load(Window *window) {
   GRect bounds = layer_get_bounds(window_layer);
 
   // Time text
-  time_text_layer = text_layer_create(GRect(0, bounds.size.w/2, bounds.size.w, 96));
+  time_text_layer = text_layer_create(GRect(0, bounds.size.w / 2, bounds.size.w, 96));
   text_layer_set_background_color(time_text_layer, background_color);
   text_layer_set_text_color(time_text_layer, foreground_color);
   text_layer_set_font(time_text_layer, fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49));
@@ -117,7 +115,7 @@ static void window_load(Window *window) {
   layer_add_child(window_layer, text_layer_get_layer(time_text_layer));
 
   // Date text
-  date_text_layer = text_layer_create(GRect(0, bounds.size.w/2+58, bounds.size.w, 38));
+  date_text_layer = text_layer_create(GRect(0, bounds.size.w / 2 + 58, bounds.size.w, 38));
   text_layer_set_background_color(date_text_layer, background_color);
   text_layer_set_text_color(date_text_layer, foreground_color);
   text_layer_set_font(date_text_layer, fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21));
@@ -146,11 +144,7 @@ static void window_unload(Window *window) {
 static void init(void) {
   redraw_counter = 0;
 
-#ifdef PBL_BW
   world_bitmap = gbitmap_create_with_resource(RESOURCE_ID_WORLD);
-#else
-  world_bitmap = gbitmap_create_with_resource(RESOURCE_ID_WORLD);
-#endif
   width = gbitmap_get_bounds(world_bitmap).size.w;
   height = width / 2;
 
@@ -160,16 +154,13 @@ static void init(void) {
     .unload = window_unload,
   });
   
-  const bool animated = true;
-  window_stack_push(window, animated);
+  window_stack_push(window, true);
 
-  s = malloc(STR_SIZE);
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
 }
 
 static void deinit(void) {
   tick_timer_service_unsubscribe();
-  free(s);
   window_destroy(window);
   gbitmap_destroy(world_bitmap);
 }
