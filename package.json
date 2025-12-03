@@ -1,0 +1,47 @@
+{
+  "name": "Day Night",
+  "author": "Ren Gianforte",
+  "version": "1.6.0",
+  "keywords": [
+    "pebble-app"
+  ],
+  "dependencies": {},
+  "pebble": {
+    "sdkVersion": "3",
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "diorite",
+      "emery",
+      "flint"
+    ],
+    "enableMultiJS": false,
+    "capabilities": [],
+    "projectType": "native",
+    "displayName": "Day and Night Earth Watchface",
+    "uuid": "2ca6b5d8-09a2-4836-894d-a928311820f9",
+    "watchapp": {
+      "watchface": true,
+      "hiddenApp": false,
+      "onlyShownOnCommunication": false
+    },
+    "resources": {
+      "media": [
+        {
+          "type": "png",
+          "name": "IMAGE_MENU_ICON",
+          "file": "menu_icon.png",
+          "menuIcon": true
+        },
+        {
+          "type": "png",
+          "name": "WORLD",
+          "file": "world.png"
+        }
+      ]
+    },
+    "messageKeys": {
+      "dummy": 0
+    }
+  }
+}
