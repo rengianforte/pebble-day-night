@@ -37,6 +37,15 @@
           "type": "png",
           "name": "WORLD",
           "file": "world.png"
+        },
+        {
+          "type": "font",
+          "name": "ROBOTO_65",
+          "file": "Roboto-Bold.ttf",
+          "characterRegex": "[:0-9]",
+          "targetPlatforms": [
+            "emery"
+          ]
         }
       ]
     },
