@@ -34,6 +34,8 @@ static void draw_earth() {
   // 0.2164 is march 20, the 79th day of the year, the march equinox
   // Earth's inclination is 23.4 degrees, so sun should vary 23.4/90=.26 up and down
   int sun_y = -sin_lookup((day_of_year - 0.2164) * TRIG_MAX_ANGLE) * .26 * .25;
+  float sin_sun = (float)sin_lookup(sun_y) / (float)TRIG_MAX_RATIO;
+  float cos_sun = (float)cos_lookup(sun_y) / (float)TRIG_MAX_RATIO;
   // ##### draw the bitmap
   uint8_t *world_data = gbitmap_get_data(world_bitmap);
 #ifdef PBL_BW
@@ -50,8 +52,8 @@ static void draw_earth() {
     for(y = 0; y < height; y++) {
       int y_angle = (int)((float)TRIG_MAX_ANGLE * (float)y / (float)(height * 2)) - TRIG_MAX_ANGLE/4;
       // spherical law of cosines
-      float angle = ((float)sin_lookup(sun_y)/(float)TRIG_MAX_RATIO) * ((float)sin_lookup(y_angle)/(float)TRIG_MAX_RATIO);
-      angle = angle + ((float)cos_lookup(sun_y)/(float)TRIG_MAX_RATIO) * ((float)cos_lookup(y_angle)/(float)TRIG_MAX_RATIO) * ((float)cos_lookup(sun_x - x_angle)/(float)TRIG_MAX_RATIO);
+      float angle = sin_sun * ((float)sin_lookup(y_angle)/(float)TRIG_MAX_RATIO);
+      angle = angle + cos_sun * ((float)cos_lookup(y_angle)/(float)TRIG_MAX_RATIO) * ((float)cos_lookup(sun_x - x_angle)/(float)TRIG_MAX_RATIO);
 #ifdef PBL_BW
       int byte = y * row_bytes + (int)(x / 8);
       if ((angle < 0) ^ (0x1 & (world_data[byte] >> (7 - x % 8)))) {
