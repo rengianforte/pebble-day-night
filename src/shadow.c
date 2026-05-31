@@ -40,6 +40,10 @@ static void draw_earth() {
   uint8_t *image_data = gbitmap_get_data(image);
 #endif
   int row_bytes = gbitmap_get_bytes_per_row(world_bitmap);
+#ifndef PBL_BW
+  uint8_t *night_data = world_data + row_bytes * height;
+  uint8_t *day_data = night_data + row_bytes * height;
+#endif
   int x, y;
   for(x = 0; x < width; x++) {
     int x_angle = (int)((float)TRIG_MAX_ANGLE * (float)x / (float)(width));
@@ -60,9 +64,9 @@ static void draw_earth() {
 #else
       int byte = y * row_bytes + x;
       if (angle < 0) { // dark pixel
-        world_data[byte] = world_data[width*height + byte];
+        world_data[byte] = night_data[byte];
       } else { // light pixel
-        world_data[byte] = world_data[width*height*2 + byte];
+        world_data[byte] = day_data[byte];
       }
 #endif
     }
