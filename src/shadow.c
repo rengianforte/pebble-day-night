@@ -72,9 +72,13 @@ static void draw_watch(struct Layer *layer, GContext *ctx) {
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
   static char time_text[6]; // "00:00\0"
   static char date_text[12]; // "Xxx, Xxx 00\0"
+  static int last_date_yday = -1;
 
-  strftime(date_text, sizeof(date_text), "%a, %b %e", tick_time);
-  text_layer_set_text(date_text_layer, date_text);
+  if (tick_time->tm_yday != last_date_yday) {
+    last_date_yday = tick_time->tm_yday;
+    strftime(date_text, sizeof(date_text), "%a, %b %e", tick_time);
+    text_layer_set_text(date_text_layer, date_text);
+  }
 
   if (clock_is_24h_style()) {
     strftime(time_text, sizeof(time_text), "%R", tick_time);
