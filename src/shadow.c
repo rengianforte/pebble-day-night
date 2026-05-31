@@ -123,7 +123,7 @@ static void window_load(Window *window) {
   text_layer_set_text_alignment(date_text_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(date_text_layer));
 
-  canvas = layer_create(GRect(0, 0, bounds.size.w, bounds.size.h));
+  canvas = layer_create(GRect(0, 0, width, height));
   layer_set_update_proc(canvas, draw_watch);
   layer_add_child(window_layer, canvas);
 #ifdef PBL_BW
