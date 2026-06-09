@@ -34,30 +34,44 @@ static void draw_earth() {
   // 0.2164 is march 20, the 79th day of the year, the march equinox
   // Earth's inclination is 23.4 degrees, so sun should vary 23.4/90=.26 up and down
   int sun_y = -sin_lookup((day_of_year - 0.2164) * TRIG_MAX_ANGLE) * .26 * .25;
+  float sin_sun = (float)sin_lookup(sun_y) / (float)TRIG_MAX_RATIO;
+  float cos_sun = (float)cos_lookup(sun_y) / (float)TRIG_MAX_RATIO;
   // ##### draw the bitmap
-  int x, y;
-  for(x = 0; x < width; x++) {
-    int x_angle = (int)((float)TRIG_MAX_ANGLE * (float)x / (float)(width));
-    for(y = 0; y < height; y++) {
-      int y_angle = (int)((float)TRIG_MAX_ANGLE * (float)y / (float)(height * 2)) - TRIG_MAX_ANGLE/4;
-      // spherical law of cosines
-      float angle = ((float)sin_lookup(sun_y)/(float)TRIG_MAX_RATIO) * ((float)sin_lookup(y_angle)/(float)TRIG_MAX_RATIO);
-      angle = angle + ((float)cos_lookup(sun_y)/(float)TRIG_MAX_RATIO) * ((float)cos_lookup(y_angle)/(float)TRIG_MAX_RATIO) * ((float)cos_lookup(sun_x - x_angle)/(float)TRIG_MAX_RATIO);
+  uint8_t *world_data = gbitmap_get_data(world_bitmap);
 #ifdef PBL_BW
-      int byte = y * gbitmap_get_bytes_per_row(world_bitmap) + (int)(x / 8);
-      if ((angle < 0) ^ (0x1 & (((char *)gbitmap_get_data(world_bitmap))[byte] >> (7 - x % 8)))) {
+  uint8_t *image_data = gbitmap_get_data(image);
+#endif
+  int row_bytes = gbitmap_get_bytes_per_row(world_bitmap);
+#ifndef PBL_BW
+  uint8_t *night_data = world_data + row_bytes * height;
+  uint8_t *day_data = night_data + row_bytes * height;
+#endif
+  int x, y;
+  for(y = 0; y < height; y++) {
+    int row_offset = y * row_bytes;
+    int y_angle = TRIG_MAX_ANGLE * y / (height * 2) - TRIG_MAX_ANGLE/4;
+    float sin_y = (float)sin_lookup(y_angle) / (float)TRIG_MAX_RATIO;
+    float cos_y = (float)cos_lookup(y_angle) / (float)TRIG_MAX_RATIO;
+    for(x = 0; x < width; x++) {
+      int x_angle = TRIG_MAX_ANGLE * x / width;
+      // spherical law of cosines
+      float angle = sin_sun * sin_y;
+      angle = angle + cos_sun * cos_y * ((float)cos_lookup(sun_x - x_angle)/(float)TRIG_MAX_RATIO);
+#ifdef PBL_BW
+      int byte = row_offset + (int)(x / 8);
+      if ((angle < 0) ^ (0x1 & (world_data[byte] >> (7 - x % 8)))) {
         // white pixel
-        ((char *)gbitmap_get_data(image))[byte] = ((char *)gbitmap_get_data(image))[byte] | (0x1 << (7 - x % 8));
+        image_data[byte] = image_data[byte] | (0x1 << (7 - x % 8));
       } else {
         // black pixel
-        ((char *)gbitmap_get_data(image))[byte] = ((char *)gbitmap_get_data(image))[byte] & ~(0x1 << (7 - x % 8));
+        image_data[byte] = image_data[byte] & ~(0x1 << (7 - x % 8));
       }
 #else
-      int byte = y * gbitmap_get_bytes_per_row(world_bitmap) + x;
+      int byte = row_offset + x;
       if (angle < 0) { // dark pixel
-        gbitmap_get_data(world_bitmap)[byte] = gbitmap_get_data(world_bitmap)[width*height + byte];
+        world_data[byte] = night_data[byte];
       } else { // light pixel
-        gbitmap_get_data(world_bitmap)[byte] = gbitmap_get_data(world_bitmap)[width*height*2 + byte];
+        world_data[byte] = day_data[byte];
       }
 #endif
     }
@@ -72,9 +86,13 @@ static void draw_watch(struct Layer *layer, GContext *ctx) {
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
   static char time_text[6]; // "00:00\0"
   static char date_text[12]; // "Xxx, Xxx 00\0"
+  static int last_date_yday = -1;
 
-  strftime(date_text, sizeof(date_text), "%a, %b %e", tick_time);
-  text_layer_set_text(date_text_layer, date_text);
+  if (tick_time->tm_yday != last_date_yday) {
+    last_date_yday = tick_time->tm_yday;
+    strftime(date_text, sizeof(date_text), "%a, %b %e", tick_time);
+    text_layer_set_text(date_text_layer, date_text);
+  }
 
   if (clock_is_24h_style()) {
     strftime(time_text, sizeof(time_text), "%R", tick_time);
@@ -123,7 +141,7 @@ static void window_load(Window *window) {
   text_layer_set_text_alignment(date_text_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(date_text_layer));
 
-  canvas = layer_create(GRect(0, 0, bounds.size.w, bounds.size.h));
+  canvas = layer_create(GRect(0, 0, width, height));
   layer_set_update_proc(canvas, draw_watch);
   layer_add_child(window_layer, canvas);
 #ifdef PBL_BW
