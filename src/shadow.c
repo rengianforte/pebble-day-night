@@ -14,6 +14,13 @@ static int redraw_counter;
 static int width;
 static int height;
 
+#ifdef PBL_PLATFORM_EMERY
+static GFont s_font;
+#define TEXT_OFFSET 12
+#else
+#define TEXT_OFFSET 0
+#endif
+
 static void draw_earth() {
   // ##### calculate the time
   int now = time(NULL);
@@ -124,16 +131,21 @@ static void window_load(Window *window) {
   GRect bounds = layer_get_bounds(window_layer);
 
   // Time text
-  time_text_layer = text_layer_create(GRect(0, bounds.size.w / 2, bounds.size.w, 96));
+  time_text_layer = text_layer_create(GRect(0, bounds.size.w / 2, bounds.size.w, 96 + TEXT_OFFSET));
   text_layer_set_background_color(time_text_layer, background_color);
   text_layer_set_text_color(time_text_layer, foreground_color);
+#ifdef PBL_PLATFORM_EMERY
+  s_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_ROBOTO_65));
+  text_layer_set_font(time_text_layer, s_font);
+#else
   text_layer_set_font(time_text_layer, fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49));
+#endif
   text_layer_set_text(time_text_layer, "");
   text_layer_set_text_alignment(time_text_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(time_text_layer));
 
   // Date text
-  date_text_layer = text_layer_create(GRect(0, bounds.size.w / 2 + 58, bounds.size.w, 38));
+  date_text_layer = text_layer_create(GRect(0, bounds.size.w / 2 + 58 + TEXT_OFFSET, bounds.size.w, 38));
   text_layer_set_background_color(date_text_layer, background_color);
   text_layer_set_text_color(date_text_layer, foreground_color);
   text_layer_set_font(date_text_layer, fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21));
